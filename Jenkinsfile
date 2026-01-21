@@ -16,10 +16,10 @@ pipeline {
             }
         }
 
-        stage('Setting up our Virtual Environment and Installing dependancies') {
+        stage('Setting up our Virtual Environment') {
             steps {
                 script {
-                    echo 'Setting up our Virtual Environment and Installing dependancies............'
+                    echo 'Setting up our Virtual Environment............'
                     sh '''
                     python3 -m venv ${VENV_DIR}
                     . ${VENV_DIR}/bin/activate
@@ -36,9 +36,6 @@ pipeline {
                     script {
                         echo 'Building and Pushing Docker Image to GCR.............'
                         sh '''
-                        # Debug check to confirm gcloud is found
-                        gcloud --version
-                        
                         gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
                         gcloud config set project ${GCP_PROJECT}
                         gcloud auth configure-docker --quiet
@@ -50,5 +47,27 @@ pipeline {
                 }
             }
         }
+
+        stage('Deploy to Google Cloud Run') {
+            steps {
+                withCredentials([file(credentialsId: 'gcp-key', variable: 'GOOGLE_APPLICATION_CREDENTIALS')]) {
+                    script {
+                        echo 'Deploying to Google Cloud Run.............'
+                        sh '''
+                        # Activate Service Account
+                        gcloud auth activate-service-account --key-file=${GOOGLE_APPLICATION_CREDENTIALS}
+                        gcloud config set project ${GCP_PROJECT}
+
+                        # Deploy Command
+                        gcloud run deploy ml-project \
+                            --image=gcr.io/${GCP_PROJECT}/ml-project:latest \
+                            --platform=managed \
+                            --region=us-central1 \
+                            --allow-unauthenticated \
+                        '''
+                    }
+                }
+            }
+        }
     }
-}
+}           
