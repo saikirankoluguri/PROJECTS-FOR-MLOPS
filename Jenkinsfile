@@ -14,7 +14,6 @@ pipeline{
                     }
             }
         }
-    }
 
     stage('Setting up our Virtual Environment and Installing dependancies'){
             steps{
@@ -29,4 +28,5 @@ pipeline{
                 }
             }
         }
+    }
 }
